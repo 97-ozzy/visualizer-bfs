@@ -10,7 +10,7 @@ function BFS() {
   const [hexParametres, setHexParametres] = useState(null);
   const [canvasPosition, setCanvasPosition] = useState({ left: 0, right: 0, top: 0, bottom: 0 });
   const [currentHex, setCurrentHex] = useState({q: 0, r: 0, s: 0, x:0, y:0});
-  const [currentDistanceLine, setCurrentDistanceLine] = useState(); 
+  const [currentDistanceLine, setCurrentDistanceLine] = useState(0); 
   
   const handleMouseMove = (e) => {
     const {left, right, top, bottom} = canvasPosition;
@@ -38,7 +38,7 @@ function BFS() {
 
   }
 
-  const getHexCornerCord = (center, i) => {
+  const getHexCornerCoord = (center, i) => {
     let angle_deg = 60 * i + 30;
     let angle_rad = (Math.PI / 180) * angle_deg;
     let x = center.x + hexSize * Math.cos(angle_rad);
@@ -50,13 +50,13 @@ function BFS() {
     return { x: x, y: y };
   };
 
-  const drawHex = (canvasId, center, color, width) => {
+  const drawHex = (canvasId, center, lineColor, width, fillColor) => {
     const ctx = canvasId.current.getContext("2d");
     for (let i = 0; i <= 5; i++) {
-      let start = getHexCornerCord(center, i);
-      let end = getHexCornerCord(center, i + 1);
-
-      drawLine(canvasId, { x: start.x, y: start.y }, { x: end.x, y: end.y }, color, width);
+      let start = getHexCornerCoord(center, i);
+      let end = getHexCornerCoord(center, i + 1);
+      fillHex(canvasId, center, fillColor); 
+      drawLine(canvasId, start, end, lineColor, width);
     }
   };
 
@@ -89,8 +89,8 @@ function BFS() {
         const {x, y} = hexToPixel(Hex(q-p, r));
         if ((x>hexWidth/2 && x <canvasWidth -hexWidth/2)&&
             (y> hexHeight/2 && y< canvasHeight - hexHeight/2)){
-                drawHex(canvasHex, Point(x, y), "grey");
-                drawHexCoordinates(canvasHex, Point(x, y), Hex(q-p, r, -(q-p)-r));
+                drawHex(canvasHex, Point(x, y),"black",1, "grey");
+               // drawHexCoordinates(canvasHex, Point(x, y), Hex(q-p, r, -(q-p)-r));
             }
     }
     }
@@ -102,8 +102,8 @@ function BFS() {
         const {x, y} = hexToPixel(Hex(q+n, r));
         if ((x>hexWidth/2 && x <canvasWidth -hexWidth/2)&&
             (y> hexHeight/2 && y< canvasHeight - hexHeight/2)){
-                drawHex(canvasHex, Point(x, y), "grey");
-                drawHexCoordinates(canvasHex, Point(x, y), Hex(q+n, r, -(q+n)-r));
+                drawHex(canvasHex, Point(x, y),"black",1, "grey");
+               // drawHexCoordinates(canvasHex, Point(x, y), Hex(q+n, r, -(q+n)-r));
             }
     }
     }
@@ -202,23 +202,49 @@ function BFS() {
     setCurrentDistanceLine(arr);
   }
 
+  const fillHex = (canvasID, center, fillColor)=>{
+    let c0 = getHexCornerCoord (center, 0); 
+    let c1 = getHexCornerCoord (center, 1); 
+    let c2= getHexCornerCoord (center, 2); 
+    let c3 = getHexCornerCoord (center, 3); 
+    let c4 = getHexCornerCoord (center, 4); 
+    let c5 = getHexCornerCoord (center, 5); 
+    const ctx = canvasID.current.getContext("2d");
+    ctx.beginPath();
+    ctx.fillStyle = fillColor;
+    ctx.globalAlpha = 0.1;
+    ctx.moveTo(c0.x, c0.y);
+    ctx.lineTo(c1.x, c1.y);
+    ctx.lineTo(c2.x, c2.y);
+    ctx.lineTo(c3.x, c3.y);
+    ctx.lineTo(c4.x, c4.y);
+    ctx.lineTo(c5.x, c5.y);
+    ctx.closePath();
+    ctx.fill();
+  };
+
   
 
   
 
   useEffect(() => {
-    
-
     const { canvasWidth, canvasHeight } = canvasSize;
     const ctx = canvasCoordinates.current.getContext("2d");
     ctx.clearRect(0, 0, canvasWidth, canvasHeight);
     if (currentHex) {
       const { q, r, s, x, y } = currentHex;
       for(let i = 0; i<=currentDistanceLine.length -1; i++){
-        drawHex(canvasCoordinates, Point(currentDistanceLine[i].x, currentDistanceLine[i].y), "lime", 2);
+        if (i===0){
+            drawHex(canvasCoordinates, Point(currentDistanceLine[i].x, currentDistanceLine[i].y), "black", 1, "red");
+        } 
+        else {
+            drawHex(canvasCoordinates, Point(currentDistanceLine[i].x, currentDistanceLine[i].y), "black", 1, "grey");
+        }
       }
       //drawNeighbors(Hex(q,r,s));
-      drawHex(canvasCoordinates, Point(x, y), "lime", 2);
+      drawHex(canvasCoordinates, Point(x, y), "black", 1, "grey");
+
+      
     }
   }, [currentHex]);
 
