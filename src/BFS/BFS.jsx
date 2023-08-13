@@ -9,18 +9,26 @@ function BFS() {
   const canvasCoordinates = React.createRef();
   const [hexParametres, setHexParametres] = useState(null);
   const [canvasPosition, setCanvasPosition] = useState({ left: 0, right: 0, top: 0, bottom: 0 });
-  const [currentHex, setCurrentHex] = useState({q: 0, r: 0, s: 0, x:0, y:0});  
+  const [currentHex, setCurrentHex] = useState({q: 0, r: 0, s: 0, x:0, y:0});
+  const [currentDistanceLine, setCurrentDistanceLine] = useState(); 
   
   const handleMouseMove = (e) => {
     const {left, right, top, bottom} = canvasPosition;
+    const { canvasWidth, canvasHeight } = canvasSize;
+    const {hexWidth, hexHeight, vertDist, horizDist} = hexParametres;
     let offsetX = e.pageX - left;
-    let offsetY= e.pageY - top;
-    //console.log("Canvas Coordinates:", offsetX, offsetY);
+    let offsetY= e.pageY - top;  
 
     const {q,r,s} = cubeRound(pixelToHex(Point(offsetX, offsetY)));
-    const {x , y} = hexToPixel(Hex(q, r, s));
-    drawHex(canvasCoordinates, Point(x, y), "green", 2);
-    setCurrentHex({q, r, s, x, y});
+    const {x, y} = hexToPixel(Hex(q, r, s));
+    getDistanceLine(Hex(0,0,0), Hex(q,r,s));
+    console.log(currentDistanceLine);
+    if ((x>hexWidth/2 && x <canvasWidth -hexWidth/2)&&
+            (y> hexHeight/2 && y< canvasHeight - hexHeight/2)){
+        setCurrentHex({q, r, s, x, y});        
+            }
+
+    
     
   };
 
@@ -81,8 +89,8 @@ function BFS() {
         const {x, y} = hexToPixel(Hex(q-p, r));
         if ((x>hexWidth/2 && x <canvasWidth -hexWidth/2)&&
             (y> hexHeight/2 && y< canvasHeight - hexHeight/2)){
-                drawHex(canvasHex, Point(x, y));
-                drawHexCoordinates(canvasHex, Point(x, y), Hex(q-p, r, -q-r));
+                drawHex(canvasHex, Point(x, y), "grey");
+                drawHexCoordinates(canvasHex, Point(x, y), Hex(q-p, r, -(q-p)-r));
             }
     }
     }
@@ -94,8 +102,8 @@ function BFS() {
         const {x, y} = hexToPixel(Hex(q+n, r));
         if ((x>hexWidth/2 && x <canvasWidth -hexWidth/2)&&
             (y> hexHeight/2 && y< canvasHeight - hexHeight/2)){
-                drawHex(canvasHex, Point(x, y));
-                drawHexCoordinates(canvasHex, Point(x, y), Hex(q+n, r, -q-r));
+                drawHex(canvasHex, Point(x, y), "grey");
+                drawHexCoordinates(canvasHex, Point(x, y), Hex(q+n, r, -(q+n)-r));
             }
     }
     }
@@ -127,6 +135,7 @@ function BFS() {
     let hexWidth = (Math.sqrt(3) / 2) * hexHeight;
     let vertDist = hexHeight *3/4;
     let horizDist = hexWidth;
+    setHexParametres({ hexWidth, hexHeight, vertDist, horizDist });//experimental
     return { hexWidth, hexHeight, vertDist, horizDist };
   };
 
@@ -146,6 +155,55 @@ function BFS() {
     return Hex(rx, ry, rz)
   };
 
+  const cubeDirections = (direction) => {
+    const cubeDirection = [Hex(1, 0, -1), Hex(1,-1,0), Hex(0,-1,1), Hex(-1,0,1), Hex(-1,1,0), Hex(0,1,-1)];
+    return cubeDirection[direction];
+  };
+
+  const cubeAdd = (a, b) => {
+    return Hex(a.q + b.q, a.r + b.r, a.s + b.s)
+  };
+
+  const cubeSubstract = (a, b) =>{
+    return Hex(a.q - b.q, a.r - b.r, a.s - b.s)
+  };
+
+  const getCubeNeighbor = (h, direction)=>{
+    return cubeAdd(h, cubeDirections(direction));
+  };
+
+  const drawNeighbors= (h) =>{
+    for (let i = 0; i<=5; i++){
+        const {q, r,s} = getCubeNeighbor(Hex(h.q, h.r, h.s), i);
+        const {x,y} = hexToPixel(Hex(q,r,s));
+        drawHex(canvasCoordinates, Point(x,y), "red", 2);
+    }
+  };
+
+  const cubeDistance = (a, b) =>{
+    const {q, r, s} = cubeSubstract(a, b);
+    return (Math.abs(q)+Math.abs(r)+Math.abs(s))/2;
+  };
+
+  const linearInt = (a, b,t) =>{
+    return (a+(b-a)*t)
+  }
+  const cubeLinearInt = (a, b, t)=>{
+    return Hex(linearInt(a.q, b.q, t),linearInt(a.r, b.r, t), linearInt(a.s, b.s, t) );
+  };
+
+  const getDistanceLine = (a, b)=> {
+    let dist = cubeDistance(a,b);
+    let arr = [];
+    for(let i=0; i<=dist; i++){
+        let center = hexToPixel(cubeRound(cubeLinearInt(a,b,1.0/dist*i)));
+        arr = [].concat(arr, center);
+    }
+    setCurrentDistanceLine(arr);
+  }
+
+  
+
   
 
   useEffect(() => {
@@ -156,6 +214,10 @@ function BFS() {
     ctx.clearRect(0, 0, canvasWidth, canvasHeight);
     if (currentHex) {
       const { q, r, s, x, y } = currentHex;
+      for(let i = 0; i<=currentDistanceLine.length -1; i++){
+        drawHex(canvasCoordinates, Point(currentDistanceLine[i].x, currentDistanceLine[i].y), "lime", 2);
+      }
+      //drawNeighbors(Hex(q,r,s));
       drawHex(canvasCoordinates, Point(x, y), "lime", 2);
     }
   }, [currentHex]);
