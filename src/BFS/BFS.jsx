@@ -11,7 +11,8 @@ function BFS() {
   const [canvasPosition, setCanvasPosition] = useState({ left: 0, right: 0, top: 0, bottom: 0 });
   const [currentHex, setCurrentHex] = useState({q: 0, r: 0, s: 0, x:0, y:0});
   const [currentDistanceLine, setCurrentDistanceLine] = useState(0); 
-  
+  const [playerPosition, setPlayerPosition] = useState({q: 0, r: 0, s: 0, x:0, y:0});
+
   const handleMouseMove = (e) => {
     const {left, right, top, bottom} = canvasPosition;
     const { canvasWidth, canvasHeight } = canvasSize;
@@ -21,16 +22,17 @@ function BFS() {
 
     const {q,r,s} = cubeRound(pixelToHex(Point(offsetX, offsetY)));
     const {x, y} = hexToPixel(Hex(q, r, s));
-    getDistanceLine(Hex(0,0,0), Hex(q,r,s));
+    getDistanceLine(Hex(playerPosition.q, playerPosition.r, playerPosition.s), Hex(q,r,s));
     console.log(currentDistanceLine);
     if ((x>hexWidth/2 && x <canvasWidth -hexWidth/2)&&
             (y> hexHeight/2 && y< canvasHeight - hexHeight/2)){
         setCurrentHex({q, r, s, x, y});        
             }
-
-    
-    
   };
+
+  const handleClick = () =>{
+    setPlayerPosition(currentHex);
+  }
 
   const getCanvasPosition=(canvasID)=>{
     let rect = canvasID.current.getBoundingClientRect();
@@ -267,7 +269,7 @@ function BFS() {
   return (
     <div className="BFS">
       <canvas ref={canvasHex} ></canvas>
-      <canvas ref={canvasCoordinates} onMouseMove={handleMouseMove}></canvas>
+      <canvas ref={canvasCoordinates} onMouseMove={handleMouseMove} onClick={handleClick}></canvas>
     </div>
   );
 }
