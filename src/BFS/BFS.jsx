@@ -6,12 +6,12 @@ function BFS() {
   const hexOrigin = { x: 400, y: 300 };
   const canvasSize = { canvasWidth: 800, canvasHeight: 600 };
   const canvasHex = React.createRef();
-  const canvasCoordinates = React.createRef();
+  const canvasInteraction = React.createRef();
   const [hexParametres, setHexParametres] = useState(null);
   const [canvasPosition, setCanvasPosition] = useState({ left: 0, right: 0, top: 0, bottom: 0 });
   const [currentHex, setCurrentHex] = useState({q: 0, r: 0, s: 0, x:0, y:0});
   const [currentDistanceLine, setCurrentDistanceLine] = useState(0); 
-  const [playerPosition, setPlayerPosition] = useState({q: 0, r: 0, s: 0, x:0, y:0});
+  const [obstacles, setObstacles] = useState([]);
 
   const handleMouseMove = (e) => {
     const {left, right, top, bottom} = canvasPosition;
@@ -22,7 +22,7 @@ function BFS() {
 
     const {q,r,s} = cubeRound(pixelToHex(Point(offsetX, offsetY)));
     const {x, y} = hexToPixel(Hex(q, r, s));
-    getDistanceLine(Hex(playerPosition.q, playerPosition.r, playerPosition.s), Hex(q,r,s));
+    getDistanceLine(Hex(0,0,0), Hex(q,r,s));
     console.log(currentDistanceLine);
     if ((x>hexWidth/2 && x <canvasWidth -hexWidth/2)&&
             (y> hexHeight/2 && y< canvasHeight - hexHeight/2)){
@@ -31,7 +31,7 @@ function BFS() {
   };
 
   const handleClick = () =>{
-    setPlayerPosition(currentHex);
+    addObstacles();
   }
 
   const getCanvasPosition=(canvasID)=>{
@@ -178,7 +178,7 @@ function BFS() {
     for (let i = 0; i<=5; i++){
         const {q, r,s} = getCubeNeighbor(Hex(h.q, h.r, h.s), i);
         const {x,y} = hexToPixel(Hex(q,r,s));
-        drawHex(canvasCoordinates, Point(x,y), "red", 2);
+        drawHex(canvasInteraction, Point(x,y), "red", 2);
     }
   };
 
@@ -225,26 +225,45 @@ function BFS() {
     ctx.fill();
   };
 
+  const addObstacles=()=>{
+    let obs = obstacles;
+    if (!obs.includes(JSON.stringify(currentHex))){
+        obs = [].concat(obs, JSON.stringify(currentHex));
+    }
+    else {
+        obs.map((l, i)=>{
+            if (l === JSON.stringify(currentHex)){
+                obs = obs.slice(0,i).concat(obs.slice(i+1));
+            }
+        })
+    }
+    setObstacles(obs);
+  }
+
   
 
   
 
   useEffect(() => {
     const { canvasWidth, canvasHeight } = canvasSize;
-    const ctx = canvasCoordinates.current.getContext("2d");
+    const ctx = canvasInteraction.current.getContext("2d");
     ctx.clearRect(0, 0, canvasWidth, canvasHeight);
     if (currentHex) {
       const { q, r, s, x, y } = currentHex;
-      for(let i = 0; i<=currentDistanceLine.length -1; i++){
+      for(let i = 0; i<=currentDistanceLine.length -2; i++){
         if (i===0){
-            drawHex(canvasCoordinates, Point(currentDistanceLine[i].x, currentDistanceLine[i].y), "black", 1, "red");
+            drawHex(canvasInteraction, Point(currentDistanceLine[i].x, currentDistanceLine[i].y), "black", 1, "red");
         } 
         else {
-            drawHex(canvasCoordinates, Point(currentDistanceLine[i].x, currentDistanceLine[i].y), "black", 1, "grey");
+            drawHex(canvasInteraction, Point(currentDistanceLine[i].x, currentDistanceLine[i].y), "black", 1, "grey");
         }
       }
+      obstacles.map(l=>{
+        const { q, r, s, x, y } = JSON.parse(l);
+        drawHex(canvasInteraction, Point(x, y), "black", 1, "grey");
+      })
       //drawNeighbors(Hex(q,r,s));
-      drawHex(canvasCoordinates, Point(x, y), "black", 1, "grey");
+      drawHex(canvasInteraction, Point(x, y), "black", 1, "grey");
 
       
     }
@@ -257,11 +276,11 @@ function BFS() {
     hexCanvas.width = canvasWidth;
     hexCanvas.height = canvasHeight;
 
-    const coordinatesCanvas = canvasCoordinates.current;
+    const coordinatesCanvas = canvasInteraction.current;
     coordinatesCanvas.width = canvasWidth; 
     coordinatesCanvas.height = canvasHeight; 
 
-    getCanvasPosition(canvasCoordinates);
+    getCanvasPosition(canvasInteraction);
     drawHexes(); 
   }, []);
 
@@ -269,7 +288,8 @@ function BFS() {
   return (
     <div className="BFS">
       <canvas ref={canvasHex} ></canvas>
-      <canvas ref={canvasCoordinates} onMouseMove={handleMouseMove} onClick={handleClick}></canvas>
+      {/*<canvas ref={canvasCoordinates} ></canvas>*/}
+      <canvas ref={canvasInteraction} onMouseMove={handleMouseMove} onClick={handleClick}></canvas>
     </div>
   );
 }
