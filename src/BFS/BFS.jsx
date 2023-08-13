@@ -52,22 +52,22 @@ function BFS() {
     return { x: x, y: y };
   };
 
-  const drawHex = (canvasId, center, lineColor, width, fillColor) => {
+  const drawHex = (canvasId, center, lineWidth, lineColor, fillColor) => {
     const ctx = canvasId.current.getContext("2d");
     for (let i = 0; i <= 5; i++) {
       let start = getHexCornerCoord(center, i);
       let end = getHexCornerCoord(center, i + 1);
       fillHex(canvasId, center, fillColor); 
-      drawLine(canvasId, start, end, lineColor, width);
+      drawLine(canvasId, start, end, lineWidth, lineColor);
     }
   };
 
-  const drawLine = (canvasId, start, end, color, width) => {
+  const drawLine = (canvasId, start, end, lineWidth, lineColor) => {
     const ctx = canvasId.current.getContext("2d");
     ctx.beginPath();
     ctx.moveTo(start.x, start.y);
-    ctx.strokeStyle = color;
-    ctx.lineWidth = width;
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = lineWidth;
     ctx.lineTo(end.x, end.y);
     ctx.stroke();
     ctx.closePath();
@@ -91,7 +91,7 @@ function BFS() {
         const {x, y} = hexToPixel(Hex(q-p, r));
         if ((x>hexWidth/2 && x <canvasWidth -hexWidth/2)&&
             (y> hexHeight/2 && y< canvasHeight - hexHeight/2)){
-                drawHex(canvasHex, Point(x, y),"black",1, "grey");
+                drawHex(canvasHex, Point(x, y),1,"black", "grey");
                // drawHexCoordinates(canvasHex, Point(x, y), Hex(q-p, r, -(q-p)-r));
             }
     }
@@ -104,7 +104,7 @@ function BFS() {
         const {x, y} = hexToPixel(Hex(q+n, r));
         if ((x>hexWidth/2 && x <canvasWidth -hexWidth/2)&&
             (y> hexHeight/2 && y< canvasHeight - hexHeight/2)){
-                drawHex(canvasHex, Point(x, y),"black",1, "grey");
+                drawHex(canvasHex, Point(x, y),1,"black", "grey");
                // drawHexCoordinates(canvasHex, Point(x, y), Hex(q+n, r, -(q+n)-r));
             }
     }
@@ -178,7 +178,7 @@ function BFS() {
     for (let i = 0; i<=5; i++){
         const {q, r,s} = getCubeNeighbor(Hex(h.q, h.r, h.s), i);
         const {x,y} = hexToPixel(Hex(q,r,s));
-        drawHex(canvasInteraction, Point(x,y), "red", 2);
+        drawHex(canvasInteraction, Point(x,y),  2, "red");
     }
   };
 
@@ -252,18 +252,18 @@ function BFS() {
       const { q, r, s, x, y } = currentHex;
       for(let i = 0; i<=currentDistanceLine.length -2; i++){
         if (i===0){
-            drawHex(canvasInteraction, Point(currentDistanceLine[i].x, currentDistanceLine[i].y), "black", 1, "red");
+            drawHex(canvasInteraction, Point(currentDistanceLine[i].x, currentDistanceLine[i].y), 1, "black", "red");
         } 
         else {
-            drawHex(canvasInteraction, Point(currentDistanceLine[i].x, currentDistanceLine[i].y), "black", 1, "grey");
+            drawHex(canvasInteraction, Point(currentDistanceLine[i].x, currentDistanceLine[i].y), 1, "black", "grey");
         }
       }
       obstacles.map(l=>{
         const { q, r, s, x, y } = JSON.parse(l);
-        drawHex(canvasInteraction, Point(x, y), "black", 1, "grey");
+        drawHex(canvasInteraction, Point(x, y), 1, "black",  "black");
       })
       //drawNeighbors(Hex(q,r,s));
-      drawHex(canvasInteraction, Point(x, y), "black", 1, "grey");
+      drawHex(canvasInteraction, Point(x, y), 1, "black",  "grey");
 
       
     }
