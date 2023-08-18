@@ -5,40 +5,7 @@ let DUMMY_OBSTACLES = [
   {"q": -1, "r": 6, "s": -5},
   {"q": -6, "r": -9, "s": 15},
   {"q": -5, "r": -9, "s": 14},
-  {"q": -2, "r": 7, "s": -5},
-  {"q": 4, "r": -4, "s": 0},
-  {"q": 3, "r": -4, "s": 1},
-  {"q": 2, "r": -4, "s": 2},
-  {"q": 15, "r": -8, "s": -7},
-  {"q": 14, "r": -7, "s": -7},
-  {"q": 14, "r": -6, "s": -8},
-  {"q": 13, "r": -5, "s": -8},
-  {"q": 13, "r": -4, "s": 4},
-  {"q": 4, "r": 9, "s": -13},
-  {"q": 3, "r": 9, "s": -12},
-  {"q": 2, "r": 9, "s": -11},
-  {"q": 1, "r": 9, "s": -10},
-  {"q": 0, "r": 9, "s": -9},
-  {"q": -5, "r": 3, "s": 2},
-  {"q": -7, "r": 4, "s": 3},
-  {"q": -6, "r": 4, "s": 2},
-  {"q": -8, "r": 4, "s": 4},
-  {"q": -9, "r": 4, "s": 5},
-  {"q": -10, "r": 9, "s": 1},
-  {"q": -9, "r": 9, "s": 0},
-  {"q": -8, "r": 9, "s": -1},
-  {"q": -7, "r": 9, "s": -2},
-  {"q": -6, "r": 9, "s": -3},
-  {"q": -11, "r": 2, "s": 11},
-  {"q": 0, "r": -9, "s": 9},
-  {"q": 1, "r": -9, "s": 8},
-  {"q": 2, "r": -9, "s": 7},
-  {"q": 3, "r": -9, "s": -7},
-  {"q": 4, "r": 5, "s": -9},
-  {"q": 4, "r": 6, "s": -10},
-  {"q": 5, "r": 6, "s": -11},
-  {"q": 5, "r": 7, "s": -12},
-  {"q": -1, "r": -9, "s": 10},
+  {"q": -2, "r": 7, "s": -5}
 ]
 
 
@@ -62,7 +29,7 @@ function BFS() {
   const [playerPosition, setPlayerPosition] = useState({q: 0, r: 0, s: 0});
   const [cameFrom, setCameFrom] = useState({});
   const [hexPath, setHexPath] = useState([]);
-  const [path, setPath] = useState(); 
+  const [path, setPath] = useState([]); 
   const [hexPathMap, setHexPathMap] = useState([]);
 
   const handleMouseMove = (e) => {
@@ -75,6 +42,7 @@ function BFS() {
     const {q,r,s} = cubeRound(pixelToHex(Point(offsetX, offsetY)));
     const {x, y} = hexToPixel(Hex(q, r, s));
     getDistanceLine(Hex(0,0,0), Hex(q,r,s));
+    getPath(playerPosition, Hex(q, r, s));
     //console.log(currentDistanceLine);
     if ((x>hexWidth/2 && x <canvasWidth -hexWidth/2)&&
             (y> hexHeight/2 && y< canvasHeight - hexHeight/2)){
@@ -229,9 +197,6 @@ function BFS() {
     return Hex(a.q + b.q, a.r + b.r, a.s + b.s)
   };
 
-  const cubeSubstract = (a, b) =>{
-    return Hex(a.q - b.q, a.r - b.r, a.s - b.s)
-  };
 
   const getCubeNeighbor = (h, direction)=>{
     return cubeAdd(h, cubeDirections(direction));
@@ -245,10 +210,10 @@ function BFS() {
     }
   };
 
-  const cubeDistance = (a, b) =>{
-    const {q, r, s} = cubeSubstract(a, b);
-    return (Math.abs(q)+Math.abs(r)+Math.abs(s))/2;
+  const cubeDistance = (a, b) => {
+    return (Math.abs(a.q - b.q) + Math.abs(a.r - b.r) + Math.abs(a.s - b.s)) / 2;
   };
+  
 
   const linearInt = (a, b,t) =>{
     return (a+(b-a)*t)
@@ -261,8 +226,8 @@ function BFS() {
     let dist = cubeDistance(a,b);
     let arr = [];
     for(let i=0; i<=dist; i++){
-        let center = hexToPixel(cubeRound(cubeLinearInt(a,b,1.0/dist*i)));
-        arr = [].concat(arr, center);
+        let center = hexToPixel(cubeRound(cubeLinearInt(a,b,1/dist*i)));
+        arr.push(center);
     }
     setCurrentDistanceLine(arr);
   }
@@ -296,59 +261,99 @@ function BFS() {
     })
   }
 
-  const getNeighbors= (h) =>{
+  const getNeighbors = (h) => {
     let arr = [];
-    for (let i = 0; i<=5; i++){
-      const {q,r,s} = getCubeNeighbor(Hex(h.q, h.r, h.s), i);
-      arr.push(Hex(q,r,s))
+    for (let i = 0; i <= 5; i++) {
+      const { q, r, s } = getCubeNeighbor(Hex(h.q, h.r, h.s), i);
+      const neighborCoord = JSON.stringify(Hex(q, r, s));
+      if (!obstacles.some(obstacle => JSON.stringify(obstacle) === neighborCoord) && hexPathMap.includes(neighborCoord)) {
+        arr.push(Hex(q, r, s));
+      }
     }
-    return arr
-  } 
-
-  const breafthFirstSearch = (inputPlayerPosition) =>{
+    return arr;
+  };
+  
+  
+  const breafthFirstSearch = (inputPlayerPosition) => {
     let frontier = [inputPlayerPosition];
     let localCameFrom = {};
     localCameFrom[JSON.stringify(inputPlayerPosition)] = JSON.stringify(inputPlayerPosition);
-    while (frontier.length !== 0){
+  
+    while (frontier.length !== 0) {
       let current = frontier.shift();
       let arr = getNeighbors(current);
-      arr.map(l=>{
-        if(!localCameFrom.hasOwnProperty(JSON.stringify(l))&& hexPathMap.includes(JSON.stringify(l))){
+      
+      arr.forEach((l) => {
+        const currentKey = JSON.stringify(current);
+        const neighborKey = JSON.stringify(l);
+        
+        // Calculate the distance between the current position and the neighbor
+        const distanceToNeighbor = cubeDistance(current, l);
+  
+        if (!localCameFrom.hasOwnProperty(neighborKey)) {
           frontier.push(l);
-          localCameFrom[JSON.stringify(l)] = JSON.stringify(current);
+          localCameFrom[neighborKey] = currentKey;
+  
+          // Store the distance in the localCameFrom dictionary
+          localCameFrom[neighborKey + "_dist"] = distanceToNeighbor;
         }
-      })
-    
+      });
     }
-   setCameFrom(localCameFrom);
-}
+  
+    setCameFrom(localCameFrom);
+  };
+  
+  
+  
+
+  const getPath = (start, current) => {
+    start = JSON.stringify(start);
+    current = JSON.stringify(current);
+    if (cameFrom[current] !== undefined) {
+      let localPath = [current];
+      let totalDist = cameFrom[current + "_dist"];
+      while (current !== start) {
+        current = cameFrom[current];
+        localPath.push(current);
+      }
+      setPath(localPath.reverse()); // Reverse the path to get the correct order
+      setCurrentDistanceLine(totalDist); // Update the total distance
+    }
+  };
+  
+
+  const drawPath = ()=>{
+    //let localPath = path;
+    for (let i = 0; i<=path.length -1; i++){
+      const{q,r, s} = JSON.parse(path[i])
+      const{x,y} = hexToPixel(Hex(q,r, s));
+      drawHex(canvasInteraction, Point(x,y), 1, "black", "#05b9f5")
+    }
+  }
 
   
 
   useEffect(() => {
-    const { canvasWidth, canvasHeight } = canvasSize;
-    const ctx = canvasInteraction.current.getContext("2d");
-    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-    if (currentHex) {
-      const { q, r, s, x, y } = currentHex;
-      for(let i = 0; i<=currentDistanceLine.length -2; i++){
-        if (i===0){
-            drawHex(canvasInteraction, Point(currentDistanceLine[i].x, currentDistanceLine[i].y), 1, "black", "red");
-        } 
-        else {
-            drawHex(canvasInteraction, Point(currentDistanceLine[i].x, currentDistanceLine[i].y), 1, "black", "grey");
-        }
-      } 
-      obstacles.map(l=>{
-        const { q, r, s, x, y } = l;
-        drawHex(canvasInteraction, Point(x, y), 1, "black",  "black");
-      })
-      //drawNeighbors(Hex(q,r,s));
-      drawHex(canvasInteraction, Point(x, y), 1, "black",  "grey");
+      const { canvasWidth, canvasHeight } = canvasSize;
+      const ctx1 = canvasInteraction.current.getContext("2d");
+      ctx1.clearRect(0, 0, canvasWidth, canvasHeight);
+      drawPath();
+    
+  }, [path]);
 
-      
-    }
-  }, [currentHex]);
+  useEffect(() => {
+    const { canvasWidth, canvasHeight } = canvasSize;
+    const ctx = canvasView.current.getContext("2d");
+      ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+      for (let l in cameFrom){
+        const {q,r,s} = JSON.parse(JSON.stringify(l));
+        const{x,y}= hexToPixel(Hex(q,r, s));//q r
+        drawHex(canvasView, Point(x,y), 1, "black", "grey", 0.1);
+        let from = JSON.parse(cameFrom[l]);
+        let fromCorf = hexToPixel(Hex(from.q, from.r, from.s));
+
+      }
+  }, [cameFrom]);
 
   useEffect(() => {
     const { canvasWidth, canvasHeight } = canvasSize;
@@ -374,7 +379,6 @@ function BFS() {
   return (
     <div className="BFS">
       <canvas ref={canvasHex} ></canvas>
-      {/*<canvas ref={canvasCoordinates} ></canvas>*/}
       <canvas ref={canvasView}></canvas>
       <canvas ref={canvasInteraction} onMouseMove={handleMouseMove} onClick={handleClick}></canvas>
     </div>
